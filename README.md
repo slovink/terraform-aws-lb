@@ -1,193 +1,225 @@
-# Terraform-aws-lb
 
-# Terraform AWS Cloud lb Module
+<<p align="center"> <img src="https://user-images.githubusercontent.com/50652676/62349836-882fef80-b51e-11e9-99e3-7b974309c7e3.png" width="100" height="100"></p>
 
-## Table of Contents
+
+<h1 align="center">
+    Terraform AWS  Loab-Balancer
+</h1>
+
+
+<p align="center">
+
+<a href="https://www.terraform.io">
+  <img src="https://img.shields.io/badge/Terraform-v1.7.0-green" alt="Terraform">
+</a>
+<a href="https://github.com/slovink/terraform-aws-lb/blob/master/LICENSE">
+  <img src="https://img.shields.io/badge/License-APACHE-blue.svg" alt="Licence">
+</a>
+
+
+
+</p>
+<p align="center">
+
+<a href='https://www.facebook.com/Slovink.in=https://github.com/slovink/terraform-aws-lb'>
+  <img title="Share on Facebook" src="https://user-images.githubusercontent.com/50652676/62817743-4f64cb80-bb59-11e9-90c7-b057252ded50.png" />
+</a>
+<a href='https://www.linkedin.com/company/101534993/admin/feed/posts/=https://github.com/slovink/terraform-aws-lb'>
+  <img title="Share on LinkedIn" src="https://user-images.githubusercontent.com/50652676/62817742-4e339e80-bb59-11e9-87b9-a1f68cae1049.png" />
+</a>
+
+
+
 - [Introduction](#introduction)
 - [Usage](#usage)
-- [Examples](#Examples)
-- [Author](#Author)
+- [Module Inputs](#module-inputs)
+- [Module Outputs](#module-outputs)
+- [Examples](#examples)
 - [License](#license)
-- [Inputs](#inputs)
-- [Outputs](#outputs)
 
-## Introduction
-This Terraform module creates an AWS load balancer (lb) along with additional configuration options.
-## Usage
-To use this module, you can include it in your Terraform configuration. Here's an example of how to use it:
+
+
+## Prerequisites
+
+This module has a few dependencies:
+
+- [Terraform 1.x.x](https://learn.hashicorp.com/terraform/getting-started/install.html)
+- [Go](https://golang.org/doc/install)
+
+
+
+## Examples
+For detailed examples on how to use this module, please refer to the [Examples](https://github.com/slovink/terraform-aws-lb/tree/master/example) directory within this repository.
+
+## License
+This Terraform module is provided under the '[License Name]' License. Please see the [LICENSE](https://github.com/slovink/terraform-aws-lb/blob/master/LICENSE) file for more details.
+
+
 
 # Examples:
 
 ## Example: alb
 
-```hcl
-module "alb" {
-  source                     =  "./../../"
-  name                       = local.name
-  enable                     = true
-  internal                   = true
-  load_balancer_type         = "application"
-  instance_count             = 1
-  subnets                    = module.subnet.public_subnet_id
-  target_id                  = module.ec2.instance_id
-  vpc_id                     = module.vpc.vpc_id
-  allowed_ip                 = [module.vpc.vpc_cidr_block]
-  allowed_ports              = [3306]
-  enable_deletion_protection = false
-  with_target_group          = true
-  https_enabled              = true
-  http_enabled               = true
-  https_port                 = 443
-  listener_type              = "forward"
-  target_group_port          = 80
+  ```hcl
+    module "alb" {
+      source                     =  "https://github.com/slovink/terraform-aws-lb.git?ref=v1.0.0"
+      name                       = local.name
+      enable                     = true
+      internal                   = true
+      load_balancer_type         = "application"
+      instance_count             = 1
+      subnets                    = module.subnet.public_subnet_id
+      target_id                  = module.ec2.instance_id
+      vpc_id                     = module.vpc.id
+      allowed_ip                 = [module.vpc.vpc_cidr_block]
+      allowed_ports              = [3306]
+      enable_deletion_protection = false
+      with_target_group          = true
+      https_enabled              = false
+      http_enabled               = true
+      https_port                 = 443
+      listener_type              = "forward"
+      target_group_port          = 80
 
-  http_tcp_listeners = [
-    {
-      port               = 80
-      protocol           = "TCP"
-      target_group_index = 0
-    },
-  ]
-  https_listeners = [
-    {
-      port               = 443
-      protocol           = "TLS"
-      target_group_index = 0
-      certificate_arn    = ""
-    },
-    {
-      port               = 84
-      protocol           = "TLS"
-      target_group_index = 0
-      certificate_arn    = ""
-    },
-  ]
+      http_tcp_listeners = [
+        {
+          port               = 80
+          protocol           = "TCP"
+          target_group_index = 0
+        },
+      ]
+      https_listeners = [
+        {
+          port               = 443
+          protocol           = "TLS"
+          target_group_index = 0
+          certificate_arn    = ""
+        },
+        {
+          port               = 84
+          protocol           = "TLS"
+          target_group_index = 0
+          certificate_arn    = ""
+        },
+      ]
 
-  target_groups = [
-    {
-      backend_protocol     = "HTTP"
-      backend_port         = 80
-      target_type          = "instance"
-      deregistration_delay = 300
-      health_check = {
-        enabled             = true
-        interval            = 30
-        path                = "/"
-        port                = "traffic-port"
-        healthy_threshold   = 3
-        unhealthy_threshold = 3
-        timeout             = 10
-        protocol            = "HTTP"
-        matcher             = "200-399"
-      }
+      target_groups = [
+        {
+          backend_protocol     = "HTTP"
+          backend_port         = 80
+          target_type          = "instance"
+          deregistration_delay = 300
+          health_check = {
+            enabled             = true
+            interval            = 30
+            path                = "/"
+            port                = "traffic-port"
+            healthy_threshold   = 3
+            unhealthy_threshold = 3
+            timeout             = 10
+            protocol            = "HTTP"
+            matcher             = "200-399"
+          }
+        }
+      ]
     }
-  ]
 
-}
-```
+  ```
 
 ## Example: clb
 
-```hcl
-module "clb" {
-  source             = "./../../"
-  name               = "app"
-  load_balancer_type = "classic"
-  clb_enable         = true
-  internal           = true
-  vpc_id             = module.vpc.vpc_id
-  target_id          = module.ec2.instance_id
-  subnets            = module.public_subnets.public_subnet_id
-  with_target_group  = true
-  listeners = [
-    {
-      lb_port            = 22000
-      lb_protocol        = "TCP"
-      instance_port      = 22000
-      instance_protocol  = "TCP"
-      ssl_certificate_id = null
-    },
-    {
-      lb_port            = 4444
-      lb_protocol        = "TCP"
-      instance_port      = 4444
-      instance_protocol  = "TCP"
-      ssl_certificate_id = null
-    }
-  ]
-  health_check_target              = "TCP:4444"
-  health_check_timeout             = 10
-  health_check_interval            = 30
-  health_check_unhealthy_threshold = 5
-  health_check_healthy_threshold   = 5
-}
-```
+ ```hcl
+   module "clb" {
+      source             = "https://github.com/slovink/terraform-aws-lb.git?ref=v1.0.0"
+      name               = "app"
+      load_balancer_type = "classic"
+      clb_enable         = true
+      internal           = true
+      vpc_id             = module.vpc.id
+      target_id          = module.ec2.instance_id
+      subnets            = module.subnet.public_subnet_id
+      with_target_group  = true
+      listeners = [
+        {
+          lb_port            = 22000
+          lb_protocol        = "TCP"
+          instance_port      = 22000
+          instance_protocol  = "TCP"
+          ssl_certificate_id = null
+        },
+        {
+          lb_port            = 4444
+          lb_protocol        = "TCP"
+          instance_port      = 4444
+          instance_protocol  = "TCP"
+          ssl_certificate_id = null
+        }
+      ]
+      health_check_target              = "TCP:4444"
+      health_check_timeout             = 10
+      health_check_interval            = 30
+      health_check_unhealthy_threshold = 5
+      health_check_healthy_threshold   = 5
+   }
+ ```
 ## Example: nlb
 
-```hcl
-module "nlb" {
-  source                     =  "./../../"
-  version                    =  "1.0.1"
-  name                       = "app"
-  enable                     = true
-  internal                   = false
-  load_balancer_type         = "network"
-  instance_count             = 1
-  subnets                    = module.public_subnets.public_subnet_id
-  target_id                  = module.ec2.instance_id
-  vpc_id                     = module.vpc.vpc_id
-  enable_deletion_protection = false
-  with_target_group          = true
-  http_tcp_listeners = [
-    {
-      port               = 80
-      protocol           = "TCP"
-      target_group_index = 0
-    },
-    {
-      port               = 81
-      protocol           = "TCP"
-      target_group_index = 0
-    },
-  ]
-  target_groups = [
-    {
-      backend_protocol = "TCP"
-      backend_port     = 80
-      target_type      = "instance"
-    },
-    {
-      backend_protocol = "TCP"
-      backend_port     = 81
-      target_type      = "instance"
-    },
-  ]
+ ```hcl
+   module "nlb" {
+      source =  "https://github.com/slovink/terraform-aws-lb.git?ref=v1.0.0"
 
-  https_listeners = [
-    {
-      port               = 443
-      protocol           = "TLS"
-      target_group_index = 1
-      certificate_arn    = ""
-    },
-    {
-      port               = 84
-      protocol           = "TLS"
-      target_group_index = 1
-      certificate_arn    = ""
-    },
-  ]
-}
-```
+      name                       = local.name
+      enable                     = true
+      internal                   = false
+      load_balancer_type         = "network"
+      instance_count             = module.ec2.instance_count
+      subnets                    = module.subnet.public_subnet_id
+      target_id                  = module.ec2.instance_id
+      vpc_id                     = module.vpc.id
+      enable_deletion_protection = false
+      with_target_group          = true
+      http_tcp_listeners = [
+        {
+          port               = 80
+          protocol           = "TCP"
+          target_group_index = 0
+        },
+        {
+          port               = 81
+          protocol           = "TCP"
+          target_group_index = 0
+        },
+      ]
+      target_groups = [
+        {
+          backend_protocol = "TCP"
+          backend_port     = 80
+          target_type      = "instance"
+        },
+        {
+          backend_protocol = "TCP"
+          backend_port     = 81
+          target_type      = "instance"
+        },
+      ]
 
-## Example
-For detailed examples on how to use this module, please refer to the '[example](https://github.com/slovink/terraform-aws-lb/tree/master/example)' directory within this repository.
+      https_listeners = [
+        {
+          port               = 443
+          protocol           = "TLS"
+          target_group_index = 1
+          certificate_arn    = module.nlb.arn
+        },
+        {
+          port               = 84
+          protocol           = "TLS"
+          target_group_index = 1
+          certificate_arn    = module.nlb.arn
+        },
+      ]
+   }
 
-## Author
-Your Name Replace **MIT** and **slovink** with the appropriate license and your information. Feel free to expand this README with additional details or usage instructions as needed for your specific use case.
-
-## License
-This project is licensed under the **MIT** License - see the [LICENSE](https://github.com/slovink/terraform-aws-lb/blob/master/LICENSE) file for details.
+ ```
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements

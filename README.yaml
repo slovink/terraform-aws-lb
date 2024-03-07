@@ -1,0 +1,204 @@
+#
+# This is the canonical configuration for the `README.md`
+# Run `make readme` to rebuild the `README.md`
+#
+
+# Name of this project
+name : Terraform Loab-Balancer
+
+# License of this project
+license: "APACHE"
+
+# Canonical GitHub repo
+github_repo: https://github.com/slovink/terraform-aws-lb.git
+
+
+# Badges to display
+badges:
+  - name: "Terraform"
+    image: "https://img.shields.io/badge/Terraform-v1.7.0-green"
+    url: "https://www.terraform.io"
+  - name: "Licence"
+    image: "https://img.shields.io/badge/License-APACHE-blue.svg"
+    url: "https://github.com/slovink/terraform-aws-lb/blob/master/LICENSE"
+  - name: "tfsec"
+    image: "https://github.com/slovink/terraform-aws-lb/blob/master/.github/workflows/tfsec.yml"
+    url: "https://github.com/slovink/terraform-aws-lb/blob/master/.github/workflows/tfsec.yml"
+
+
+
+#  description of this project
+description: |-
+  This terraform module is designed to generate consistent label names and tags for resources. You can use terraform-lb to implement a strict naming convention.
+
+
+# extra content
+include:
+  - "terraform.md"
+# How to use this project
+usage : |-
+
+
+  ### Simple Example: alb
+
+   ```hcl
+      module "alb" {
+        source                     =  "https://github.com/slovink/terraform-aws-lb.git?ref=v1.0.0"
+        name                       = local.name
+        enable                     = true
+        internal                   = true
+        load_balancer_type         = "application"
+        instance_count             = 1
+        subnets                    = module.subnet.public_subnet_id
+        target_id                  = module.ec2.instance_id
+        vpc_id                     = module.vpc.id
+        allowed_ip                 = [module.vpc.vpc_cidr_block]
+        allowed_ports              = [3306]
+        enable_deletion_protection = false
+        with_target_group          = true
+        https_enabled              = false
+        http_enabled               = true
+        https_port                 = 443
+        listener_type              = "forward"
+        target_group_port          = 80
+
+        http_tcp_listeners = [
+          {
+            port               = 80
+            protocol           = "TCP"
+            target_group_index = 0
+          },
+        ]
+        https_listeners = [
+          {
+            port               = 443
+            protocol           = "TLS"
+            target_group_index = 0
+            certificate_arn    = ""
+          },
+          {
+            port               = 84
+            protocol           = "TLS"
+            target_group_index = 0
+            certificate_arn    = ""
+          },
+        ]
+
+        target_groups = [
+          {
+            backend_protocol     = "HTTP"
+            backend_port         = 80
+            target_type          = "instance"
+            deregistration_delay = 300
+            health_check = {
+              enabled             = true
+              interval            = 30
+              path                = "/"
+              port                = "traffic-port"
+              healthy_threshold   = 3
+              unhealthy_threshold = 3
+              timeout             = 10
+              protocol            = "HTTP"
+              matcher             = "200-399"
+            }
+          }
+        ]
+
+      }
+
+  ```
+
+  ### Simple Example: clb
+
+   ```hcl
+      module "clb" {
+        source             = "https://github.com/slovink/terraform-aws-lb.git?ref=v1.0.0"
+        name               = "app"
+        load_balancer_type = "classic"
+        clb_enable         = true
+        internal           = true
+        vpc_id             = module.vpc.id
+        target_id          = module.ec2.instance_id
+        subnets            = module.subnet.public_subnet_id
+        with_target_group  = true
+        listeners = [
+          {
+            lb_port            = 22000
+            lb_protocol        = "TCP"
+            instance_port      = 22000
+            instance_protocol  = "TCP"
+            ssl_certificate_id = null
+          },
+          {
+            lb_port            = 4444
+            lb_protocol        = "TCP"
+            instance_port      = 4444
+            instance_protocol  = "TCP"
+            ssl_certificate_id = null
+          }
+        ]
+        health_check_target              = "TCP:4444"
+        health_check_timeout             = 10
+        health_check_interval            = 30
+        health_check_unhealthy_threshold = 5
+        health_check_healthy_threshold   = 5
+      }
+   ```
+
+  ### Simple Example: nlb
+
+   ```hcl
+      module "nlb" {
+        source =  "https://github.com/slovink/terraform-aws-lb.git?ref=v1.0.0"
+
+        name                       = local.name
+        enable                     = true
+        internal                   = false
+        load_balancer_type         = "network"
+        instance_count             = module.ec2.instance_count
+        subnets                    = module.subnet.public_subnet_id
+        target_id                  = module.ec2.instance_id
+        vpc_id                     = module.vpc.id
+        enable_deletion_protection = false
+        with_target_group          = true
+        http_tcp_listeners = [
+          {
+            port               = 80
+            protocol           = "TCP"
+            target_group_index = 0
+          },
+          {
+            port               = 81
+            protocol           = "TCP"
+            target_group_index = 0
+          },
+        ]
+        target_groups = [
+          {
+            backend_protocol = "TCP"
+            backend_port     = 80
+            target_type      = "instance"
+          },
+          {
+            backend_protocol = "TCP"
+            backend_port     = 81
+            target_type      = "instance"
+          },
+        ]
+
+        https_listeners = [
+          {
+            port               = 443
+            protocol           = "TLS"
+            target_group_index = 1
+            certificate_arn    = module.nlb.arn
+          },
+          {
+            port               = 84
+            protocol           = "TLS"
+            target_group_index = 1
+            certificate_arn    = module.nlb.arn
+          },
+        ]
+      }
+   ```
